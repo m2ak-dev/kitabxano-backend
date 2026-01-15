@@ -115,6 +115,86 @@ export class UserController {
         }
     }
 
+    // Login user
+    public async loginUser(req: Request, res: Response): Promise<void> {
+        try {
+            const { email, password }: { email: string; password: string } = req.body;
+
+            // Validate input
+            if (!email || !password) {
+                res.status(400).json({ message: 'Email and password are required' });
+                return;
+            }
+
+            // Find user by email
+            const user = Array.from(this.users.values()).find(u => u.email === email);
+
+            if (!user) {
+                res.status(401).json({ message: 'Invalid email or password' });
+                return;
+            }
+
+            // Check password
+            if (user.password !== password) {
+                res.status(401).json({ message: 'Invalid email or password' });
+                return;
+            }
+
+            // Return user with token (simple token = user email)
+            res.status(200).json({
+                message: 'Login successful',
+                token: user.id,
+                user: user.getPublicProfile()
+            });
+        } catch (error) {
+            res.status(500).json({ message: 'Internal server error', error });
+        }
+    }
+
+    // Get user by email
+    public async getUserByEmail(req: Request, res: Response): Promise<void> {
+        try {
+            const { email } = req.body;
+
+            const user = Array.from(this.users.values()).find(u => u.email === email);
+
+            if (!user) {
+                res.status(404).json({ message: 'User not found' });
+                return;
+            }
+
+            res.status(200).json({
+                message: 'User retrieved successfully',
+                user: user.getPublicProfile()
+            });
+        } catch (error) {
+            res.status(500).json({ message: 'Internal server error', error });
+        }
+    }
+
+    // Get user profile by token
+    public async getProfile(req: Request, res: Response): Promise<void> {
+        try {
+            const token = req.headers.authorization?.split(' ')[1];
+
+            if (!token) {
+                res.status(401).json({ message: 'Unauthorized' });
+                return;
+            }
+
+            const user = this.users.get(token);
+
+            if (!user) {
+                res.status(404).json({ message: 'User not found' });
+                return;
+            }
+
+            res.status(200).json(user.getPublicProfile());
+        } catch (error) {
+            res.status(500).json({ message: 'Internal server error', error });
+        }
+    }
+
     // Get users list (helper method)
     public getUsers(): Map<string, User> {
         return this.users;

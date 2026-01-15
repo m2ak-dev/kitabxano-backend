@@ -9,9 +9,12 @@ export function setUserRoutes(app: Express, userController: UserController) {
 
     // Public routes
     router.post('/', (req, res) => userController.createUser(req, res));
+    router.post('/login', (req, res) => userController.loginUser(req, res));
+    router.post('/email', (req, res) => userController.getUserByEmail(req, res));
     router.get('/', (req, res) => userController.getAllUsers(req, res));
     
     // Protected routes
+    router.get('/profile', authenticate, (req, res) => userController.getProfile(req, res));
     router.get('/:userId', authenticate, (req, res) => userController.getUser(req, res));
     router.put('/:userId', authenticate, (req, res) => userController.updateUser(req, res));
     router.delete('/:userId', authenticate, (req, res) => userController.deleteUser(req, res));
