@@ -1,0 +1,122 @@
+import { Request, Response } from 'express';
+import { User } from '../models/User';
+import { IUser, CreateUserRequest, UpdateUserRequest } from '../types/index';
+
+export class UserController {
+    // In-memory database (for demonstration)
+    private users: Map<string, User> = new Map();
+    private userIdCounter: number = 1;
+
+    // Create a new user
+    public async createUser(req: Request, res: Response): Promise<void> {
+        try {
+            const { email, password, username, fullName }: CreateUserRequest = req.body;
+
+            // Validate input
+            if (!email || !password || !username || !fullName) {
+                res.status(400).json({ message: 'All fields are required' });
+                return;
+            }
+
+            // Check if user already exists
+            const existingUser = Array.from(this.users.values()).find(
+                u => u.email === email || u.username === username
+            );
+
+            if (existingUser) {
+                res.status(409).json({ message: 'User already exists' });
+                return;
+            }
+
+            const userId = `user_${this.userIdCounter++}`;
+            const newUser = new User(userId, email, password, username, fullName);
+            this.users.set(userId, newUser);
+
+            res.status(201).json({
+                message: 'User created successfully',
+                user: newUser.getPublicProfile()
+            });
+        } catch (error) {
+            res.status(500).json({ message: 'Internal server error', error });
+        }
+    }
+
+    // Get user by ID
+    public async getUser(req: Request, res: Response): Promise<void> {
+        try {
+            const { userId } = req.params;
+
+            const user = this.users.get(userId);
+            if (!user) {
+                res.status(404).json({ message: 'User not found' });
+                return;
+            }
+
+            res.status(200).json({
+                message: 'User retrieved successfully',
+                user: user.getPublicProfile()
+            });
+        } catch (error) {
+            res.status(500).json({ message: 'Internal server error', error });
+        }
+    }
+
+    // Get all users
+    public async getAllUsers(req: Request, res: Response): Promise<void> {
+        try {
+            const users = Array.from(this.users.values()).map(u => u.getPublicProfile());
+            res.status(200).json({
+                message: 'Users retrieved successfully',
+                users
+            });
+        } catch (error) {
+            res.status(500).json({ message: 'Internal server error', error });
+        }
+    }
+
+    // Update user profile
+    public async updateUser(req: Request, res: Response): Promise<void> {
+        try {
+            const { userId } = req.params;
+            const { username, fullName, bio, profilePicture }: UpdateUserRequest = req.body;
+
+            const user = this.users.get(userId);
+            if (!user) {
+                res.status(404).json({ message: 'User not found' });
+                return;
+            }
+
+            if (username) user.username = username;
+            user.updateProfile(fullName || user.fullName, profilePicture, bio);
+
+            res.status(200).json({
+                message: 'User updated successfully',
+                user: user.getPublicProfile()
+            });
+        } catch (error) {
+            res.status(500).json({ message: 'Internal server error', error });
+        }
+    }
+
+    // Delete user
+    public async deleteUser(req: Request, res: Response): Promise<void> {
+        try {
+            const { userId } = req.params;
+
+            if (!this.users.has(userId)) {
+                res.status(404).json({ message: 'User not found' });
+                return;
+            }
+
+            this.users.delete(userId);
+            res.status(200).json({ message: 'User deleted successfully' });
+        } catch (error) {
+            res.status(500).json({ message: 'Internal server error', error });
+        }
+    }
+
+    // Get users list (helper method)
+    public getUsers(): Map<string, User> {
+        return this.users;
+    }
+}
