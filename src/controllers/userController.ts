@@ -3,9 +3,24 @@ import { User } from '../models/User';
 import { IUser, CreateUserRequest, UpdateUserRequest } from '../types/index';
 
 export class UserController {
-    // In-memory database (for demonstration)
+    // In-memory database with sample data
     private users: Map<string, User> = new Map();
-    private userIdCounter: number = 1;
+    private userIdCounter: number = 3;
+
+    constructor() {
+        // Initialize with sample users for testing
+        this.initializeSampleUsers();
+    }
+
+    private initializeSampleUsers() {
+        // Sample user 1
+        const user1 = new User('user_1', 'test@example.com', 'password123', 'testuser', 'Test User', undefined, 'Test user bio');
+        this.users.set('user_1', user1);
+
+        // Sample user 2
+        const user2 = new User('user_2', 'admin@example.com', 'admin123', 'admin', 'Admin User', undefined, 'Admin bio');
+        this.users.set('user_2', user2);
+    }
 
     // Create a new user
     public async createUser(req: Request, res: Response): Promise<void> {
